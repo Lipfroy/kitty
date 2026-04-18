@@ -706,6 +706,12 @@ def save_as_session_part2(boss: BossType, opts: SaveAsSessionOptions, path: str)
         boss.edit_file(path)
 
 
+def _save_as_session_value_options() -> frozenset[str]:
+    from .simple_cli_definitions import parse_option_spec
+    seq, _ = parse_option_spec(save_as_session_options())
+    return frozenset(alias for item in seq if hasattr(item, 'type') and item.type not in ('bool-set', 'bool-reset') for alias in item.aliases)
+
+
 def parse_save_as_options_spec_args(args: list[str]) -> tuple[SaveAsSessionOptions, list[str]]:
     from kitty.cli import cached_parse_cmdline
     ans = SaveAsSessionOptions()
@@ -715,8 +721,7 @@ def parse_save_as_options_spec_args(args: list[str]) -> tuple[SaveAsSessionOptio
     # the session file path (e.g. save_as_session /path --save-only).
     options: list[str] = []
     positional: list[str] = []
-    # Options that take a value argument (not bool-set)
-    value_options = frozenset(('--match', '--base-dir'))
+    value_options = _save_as_session_value_options()
     i = 0
     while i < len(args):
         a = args[i]
