@@ -709,7 +709,12 @@ def save_as_session_part2(boss: BossType, opts: SaveAsSessionOptions, path: str)
 def _save_as_session_value_options() -> frozenset[str]:
     from .simple_cli_definitions import parse_option_spec
     seq, _ = parse_option_spec(save_as_session_options())
-    return frozenset(alias for item in seq if hasattr(item, 'type') and item.type not in ('bool-set', 'bool-reset') for alias in item.aliases)
+    return frozenset(
+        alias
+        for item in seq
+        if hasattr(item, 'type') and item.type not in ('bool-set', 'bool-reset')
+        for alias in item.aliases
+    )
 
 
 def parse_save_as_options_spec_args(args: list[str]) -> tuple[SaveAsSessionOptions, list[str]]:
@@ -730,7 +735,8 @@ def parse_save_as_options_spec_args(args: list[str]) -> tuple[SaveAsSessionOptio
             break
         if a.startswith('-'):
             options.append(a)
-            if '=' not in a and a in value_options and i + 1 < len(args):
+            next_is_value = i + 1 < len(args) and not args[i + 1].startswith('-')
+            if '=' not in a and a in value_options and next_is_value:
                 i += 1
                 options.append(args[i])
         else:
