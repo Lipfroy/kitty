@@ -709,7 +709,29 @@ def save_as_session_part2(boss: BossType, opts: SaveAsSessionOptions, path: str)
 def parse_save_as_options_spec_args(args: list[str]) -> tuple[SaveAsSessionOptions, list[str]]:
     from kitty.cli import cached_parse_cmdline
     ans = SaveAsSessionOptions()
-    leftover_args = cached_parse_cmdline(save_as_session_options(), args, ans)
+    # The CLI parser stops at the first non-option argument (POSIX style). Reorder
+    # args to put all option flags before positional args so that flags like
+    # --save-only work correctly regardless of whether they appear before or after
+    # the session file path (e.g. save_as_session /path --save-only).
+    options: list[str] = []
+    positional: list[str] = []
+    # Options that take a value argument (not bool-set)
+    value_options = frozenset(('--match', '--base-dir'))
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == '--':
+            positional.extend(args[i:])
+            break
+        if a.startswith('-'):
+            options.append(a)
+            if '=' not in a and a in value_options and i + 1 < len(args):
+                i += 1
+                options.append(args[i])
+        else:
+            positional.append(a)
+        i += 1
+    leftover_args = cached_parse_cmdline(save_as_session_options(), options + positional, ans)
     return ans, leftover_args
 
 
