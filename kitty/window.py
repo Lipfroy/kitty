@@ -2430,6 +2430,10 @@ class Window:
             else:
                 open_url(text, cwd=cwd)
 
+    @ac('cp', 'Select all text in the scrollback and current screen, or the whole alternate screen (mirrors a full-buffer selection).')
+    def select_all(self) -> None:
+        self.screen.select_all()
+
     @ac('cp', 'Clear the current selection')
     def clear_selection(self) -> None:
         self.screen.clear_selection()

@@ -4687,6 +4687,46 @@ screen_select_cmd_output(Screen *self, index_type y) {
     return true;
 }
 
+void
+screen_select_all(Screen *self) {
+    if (!self->lines) return;
+    if (self->linebuf != self->main_linebuf) {
+        screen_start_selection(self, 0, 0, true, false, EXTEND_LINE);
+        Selection *s = self->selections.items;
+        s->start.x = 0;
+        s->start.in_left_half_of_cell = true;
+        s->start.y = 0;
+        s->start_scrolled_by = 0;
+        s->end.x = self->columns;
+        s->end.in_left_half_of_cell = false;
+        s->end.y = self->lines - 1;
+        s->end_scrolled_by = 0;
+        self->selections.in_progress = false;
+        self->is_dirty = true;
+        call_boss(set_primary_selection, NULL);
+        return;
+    }
+    int count = (int)self->historybuf->count;
+    screen_start_selection(self, 0, 0, true, false, EXTEND_LINE);
+    Selection *s = self->selections.items;
+    s->start.x = 0;
+    s->start.in_left_half_of_cell = true;
+    s->end.x = self->columns;
+    s->end.in_left_half_of_cell = false;
+    if (count <= 0) {
+        s->start.y = 0;
+        s->start_scrolled_by = 0;
+    } else {
+        s->start.y = 0;
+        s->start_scrolled_by = (unsigned int)count;
+    }
+    s->end.y = self->lines - 1;
+    s->end_scrolled_by = 0;
+    self->selections.in_progress = false;
+    self->is_dirty = true;
+    call_boss(set_primary_selection, NULL);
+}
+
 static PyObject*
 screen_truncate_point_for_length(PyObject UNUSED *self, PyObject *args) {
     PyObject *str; unsigned int num_cells, start_pos = 0;
@@ -4935,6 +4975,12 @@ update_selection(Screen *self, PyObject *args) {
 static PyObject*
 clear_selection_(Screen *s, PyObject *args UNUSED) {
     clear_selection(&s->selections);
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+select_all(Screen *self, PyObject *a UNUSED) {
+    screen_select_all(self);
     Py_RETURN_NONE;
 }
 
@@ -6237,6 +6283,7 @@ static PyMethodDef methods[] = {
     MND(start_selection, METH_VARARGS)
     MND(update_selection, METH_VARARGS)
     {"clear_selection", (PyCFunction)clear_selection_, METH_NOARGS, ""},
+    MND(select_all, METH_NOARGS)
     MND(reverse_index, METH_NOARGS)
     MND(mark_as_dirty, METH_NOARGS)
     MND(reload_all_gpu_data, METH_NOARGS)

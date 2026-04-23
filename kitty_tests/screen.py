@@ -741,6 +741,38 @@ class TestScreen(BaseTest):
         self.ae(s.text_for_selection(False, True), ('1234 ', '5'))
         self.ae(s.text_for_selection(True, True), ('1234 ', '5', ''))
 
+    def test_select_all(self):
+        def joined(s):
+            return ''.join(s.text_for_selection())
+
+        s = self.create_screen()
+        for i in range(2 * s.lines):
+            if i != 0:
+                s.carriage_return(), s.linefeed()
+            s.draw(str(i) * s.columns)
+        s.select_all()
+        expected = '\n'.join(str(i) * s.columns for i in range(2 * s.lines))
+        self.ae(joined(s), expected)
+
+        s = self.create_screen(scrollback=0, lines=3, cols=5)
+        for i in range(3):
+            if i:
+                s.carriage_return(), s.linefeed()
+            s.draw(chr(ord('a') + i) * 5)
+        s.select_all()
+        self.ae(joined(s), 'aaaaa\nbbbbb\nccccc')
+
+        s = self.create_screen(cols=5, lines=2, scrollback=5)
+        s.draw('M' * 5)
+        s.toggle_alt_screen()
+        s.draw('A' * 5)
+        s.carriage_return(), s.linefeed()
+        s.draw('B' * 5)
+        s.select_all()
+        self.ae(joined(s), 'AAAAA\nBBBBB')
+        s.toggle_alt_screen()
+        self.ae(str(s.line(0)), 'M' * 5)
+
     def test_soft_hyphen(self):
         s = self.create_screen()
         s.draw('a\u00adb')
